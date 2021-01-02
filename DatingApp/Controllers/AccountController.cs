@@ -1,6 +1,8 @@
 ﻿using DatingApp.DbContexts;
 using DatingApp.DTOs;
 using DatingApp.Entities;
+using DatingApp.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -15,14 +17,18 @@ namespace DatingApp.Controllers
 {
     public class AccountController : BaseApiController
     {
+        private readonly ITokenService _tokenService;
         private readonly DataContext _context;
-        public AccountController(DataContext context)
+        public AccountController(DataContext context, ITokenService tokenService)
         {
             _context = context;
+            _tokenService = tokenService;
         }
 
+
+        [AllowAnonymous]
         [HttpPost("register")]
-        public async Task<ActionResult<AppUser>> Register([FromBody] RegisterDto dto)
+        public async Task<ActionResult<UserDto>> Register([FromBody] RegisterDto dto)
         {
 
             if (await UserExists(dto.UserName)) return BadRequest("UserName already taken");
@@ -40,8 +46,37 @@ namespace DatingApp.Controllers
 
             await _context.SaveChangesAsync();
 
-            return user;
+            return new UserDto
+            {
+                UserName = user.UserName,
+                Token = _tokenService.CreateToken(user)
+            };
         }
+
+        [AllowAnonymous]
+        [HttpPost("login")]
+        public async Task<ActionResult<UserDto>> Login([FromBody] LoginDto dto)
+        {
+            var user = await _context.Users.FirstOrDefaultAsync(x => x.UserName == dto.UserName);
+
+            if (user == null) return Unauthorized("Invalid username");
+
+            using var hmac = new HMACSHA512(user.PasswordSalt);
+
+            var computedHash = hmac.ComputeHash(Encoding.UTF8.GetBytes(dto.Password));
+
+            for(int i = 0; i< computedHash.Length; i++)
+            {
+                if (computedHash[i] != user.PasswordHash[i]) return Unauthorized("invalid password");
+            }
+
+            return new UserDto
+            {
+                UserName = user.UserName,
+                Token = _tokenService.CreateToken(user)
+            };
+        }
+
 
         private async Task<bool> UserExists(string userName)
         {
