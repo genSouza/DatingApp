@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace DatingApp.Controllers
 {
-    [Authorize]
+
     [Route("api/[controller]")]
     [ApiController]
     public class BaseApiController : ControllerBase
