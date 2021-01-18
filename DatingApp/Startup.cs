@@ -1,4 +1,5 @@
 using DatingApp.DbContexts;
+using DatingApp.Extensions;
 using DatingApp.Interfaces;
 using DatingApp.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -34,28 +35,13 @@ namespace DatingApp
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddScoped<ITokenService, TokenService>();
-            services.AddDbContext<DataContext>(options => options.UseSqlServer(Configuration.GetConnectionString("DefaultConnection")));
+            services.AddAplicationServices(Configuration);
             services.AddControllers(setupAction => setupAction.ReturnHttpNotAcceptable = true)
                 .AddNewtonsoftJson(setupAction => setupAction.SerializerSettings.ContractResolver = new CamelCasePropertyNamesContractResolver())
                 .AddXmlDataContractSerializerFormatters();
             services.AddCors();
-            services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
-            {
-                options.TokenValidationParameters = new TokenValidationParameters
-                {
-                    ValidateIssuerSigningKey = true,
-                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(Configuration["TokenKey"])),
-                    ValidateIssuer = false,
-                    ValidateAudience = false,
-                };
-
-            }
-                );
-            services.AddSwaggerGen(c =>
-            {
-                c.SwaggerDoc("v1", new OpenApiInfo { Title = "DatingApp", Version = "v1" });
-            });
+            services.AddIdentityServices(Configuration);
+            services.AddSwaggerServices(Configuration);
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

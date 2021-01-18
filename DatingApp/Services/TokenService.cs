@@ -24,13 +24,14 @@ namespace DatingApp.Services
 
         public string CreateToken(AppUser user)
         {
-            var menus = new List<string> {
-            "BOM", "User", "Runcard"
-            };
+            //var menus = new List<string> {
+            //"BOM", "User", "Runcard"
+            //};
+
             var claims = new List<Claim>
             {
                 new Claim(JwtRegisteredClaimNames.NameId, user.UserName),
-                new Claim("menus", JsonConvert.SerializeObject(menus))
+                 // new Claim("menus", JsonConvert.SerializeObject(menus))
 
             };
 
